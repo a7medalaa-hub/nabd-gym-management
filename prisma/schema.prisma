@@ -1,0 +1,508 @@
+// =============================================================================
+// نبض — Gym Management System — Prisma Schema
+// PostgreSQL, bundled locally, single-gym / single-computer, fully offline.
+//
+// ID STRATEGY: UUID everywhere (not autoincrement). This gym is single-branch
+// today, but multi-branch/remote sync is a planned future version. Autoincrement
+// IDs collide the moment two branches' databases are merged; UUIDs never do.
+// Paying this cost now avoids a full primary-key migration later.
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../server/node_modules/@prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL") // points at the bundled local Postgres instance
+}
+
+// =============================================================================
+// 1) ACCESS CONTROL — Users, Roles, Permissions (RBAC)
+// =============================================================================
+
+/// A staff account that can log into the desktop app.
+model User {
+  id           String    @id @default(uuid())
+  fullName     String
+  username     String    @unique
+  passwordHash String
+  avatarUrl    String?
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  roleId       String
+  role         Role      @relation(fields: [roleId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Reverse relations — things this user has recorded/performed
+  attendanceRecords  Attendance[]           @relation("AttendanceRecordedBy")
+  paymentsReceived   Payment[]              @relation("PaymentReceivedBy")
+  salesMade          Sale[]                 @relation("SaleSoldBy")
+  expensesPaid       Expense[]              @relation("ExpensePaidBy")
+  inventoryChanges   InventoryTransaction[] @relation("InventoryChangedBy")
+  notifications      Notification[]
+  subscriptionsAdded Subscription[]         @relation("SubscriptionCreatedBy")
+  coachProfile       Coach?
+
+  @@index([roleId])
+}
+
+/// A named role, e.g. Owner, Manager, Receptionist, Coach.
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique // "Owner" | "Manager" | "Receptionist" | "Coach" ...
+  description String?
+  users       User[]
+  permissions RolePermission[]
+
+  createdAt DateTime @default(now())
+}
+
+/// A single granular permission, e.g. "members.create", "reports.view".
+model Permission {
+  id          String           @id @default(uuid())
+  key         String           @unique
+  description String?
+  roles       RolePermission[]
+}
+
+/// Join table — many-to-many between Role and Permission.
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+// =============================================================================
+// 2) MEMBERS
+// =============================================================================
+
+model Member {
+  id               String    @id @default(uuid())
+  fullName         String
+  phone            String    @unique
+  email            String?
+  gender           Gender?
+  birthDate        DateTime?
+  photoUrl         String?
+  address          String?
+  emergencyContact String?
+  notes            String?
+
+  // Weight-goal snapshot — independent of any single subscription
+  startWeightKg Decimal? @db.Decimal(5, 1)
+  goalWeightKg  Decimal? @db.Decimal(5, 1)
+
+  isActive  Boolean  @default(true) // soft delete — never hard-delete a member with financial history
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subscriptions   Subscription[]
+  payments        Payment[]
+  attendance      Attendance[]
+  weightLogs      WeightLog[]
+  measurements    Measurement[]
+  workoutPlans    WorkoutPlan[]
+  dietPlans       DietPlan[]
+  sales           Sale[]
+  notifications   Notification[]
+
+  @@index([fullName])
+  @@index([isActive])
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+// =============================================================================
+// 3) SUBSCRIPTIONS & PAYMENTS
+// =============================================================================
+
+/// A manageable subscription plan, e.g. "شهري - فضي", editable from Settings
+/// instead of hardcoded in the frontend.
+model SubscriptionType {
+  id           String    @id @default(uuid())
+  name         String    @unique
+  durationDays Int
+  price        Decimal   @db.Decimal(10, 2)
+  description  String?
+  isVip        Boolean   @default(false) // drives whether a Member gets access to the VIP module
+  isActive     Boolean   @default(true)
+
+  subscriptions Subscription[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// One purchased/renewed subscription period for a member.
+model Subscription {
+  id                 String             @id @default(uuid())
+  memberId           String
+  member             Member             @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  subscriptionTypeId String
+  subscriptionType   SubscriptionType   @relation(fields: [subscriptionTypeId], references: [id])
+
+  startDate    DateTime
+  endDate      DateTime
+  status       SubscriptionStatus @default(ACTIVE) // kept as a stored, indexed field for fast filtering
+  priceAtPurchase Decimal          @db.Decimal(10, 2) // snapshot — protects history if type price later changes
+
+  createdByUserId String?
+  createdBy       User?    @relation("SubscriptionCreatedBy", fields: [createdByUserId], references: [id])
+
+  payments Payment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([memberId])
+  @@index([endDate])       // powers the "expiring soon" dashboard query
+  @@index([status])
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+/// Every money-in event tied to a member (new subscription or renewal).
+/// POS product sales are recorded separately in Sale/SaleItem, but both feed
+/// the same "today's revenue" report in the service layer.
+model Payment {
+  id             String        @id @default(uuid())
+  memberId       String
+  member         Member        @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  subscriptionId String?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+
+  amount        Decimal       @db.Decimal(10, 2)
+  method        PaymentMethod
+  type          PaymentType
+  notes         String?
+
+  receivedByUserId String?
+  receivedBy       User?   @relation("PaymentReceivedBy", fields: [receivedByUserId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt]) // powers daily/monthly revenue aggregation
+  @@index([memberId])
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  WALLET
+  OTHER
+}
+
+enum PaymentType {
+  NEW_SUBSCRIPTION
+  RENEWAL
+  OTHER
+}
+
+// =============================================================================
+// 4) ATTENDANCE / CHECK-IN
+// =============================================================================
+
+model Attendance {
+  id           String            @id @default(uuid())
+  memberId     String
+  member       Member            @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  checkInAt    DateTime          @default(now())
+  checkOutAt   DateTime?
+  method       AttendanceMethod  @default(MANUAL)
+
+  recordedByUserId String?
+  recordedBy       User?   @relation("AttendanceRecordedBy", fields: [recordedByUserId], references: [id])
+
+  @@index([memberId, checkInAt])
+}
+
+enum AttendanceMethod {
+  MANUAL
+  QR
+  CARD
+}
+
+// =============================================================================
+// 5) COACHES, WORKOUT PLANS, DIET PLANS
+// =============================================================================
+
+model Coach {
+  id             String   @id @default(uuid())
+  name           String
+  phone          String?
+  specialization String?
+  bio            String?
+  photoUrl       String?
+  isActive       Boolean  @default(true)
+
+  // Optional: a coach may also be a staff User with their own login
+  userId String? @unique
+  user   User?   @relation(fields: [userId], references: [id])
+
+  workoutPlans WorkoutPlan[]
+  dietPlans    DietPlan[]
+
+  createdAt DateTime @default(now())
+}
+
+model WorkoutPlan {
+  id        String    @id @default(uuid())
+  memberId  String
+  member    Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  coachId   String?
+  coach     Coach?    @relation(fields: [coachId], references: [id])
+  title     String
+  startDate DateTime
+  endDate   DateTime?
+  notes     String?
+
+  days WorkoutPlanDay[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([memberId])
+}
+
+/// One day within a plan — kept as free-text dayLabel/focus (not an enum) so
+/// coaches can write plans in Arabic exactly like the current prototype does.
+model WorkoutPlanDay {
+  id            String      @id @default(uuid())
+  workoutPlanId String
+  workoutPlan   WorkoutPlan @relation(fields: [workoutPlanId], references: [id], onDelete: Cascade)
+  dayLabel      String      // e.g. "السبت"
+  focus         String      // e.g. "صدر وترايسبس"
+  notes         String?
+  orderIndex    Int         @default(0)
+
+  exercises WorkoutExercise[]
+
+  @@index([workoutPlanId])
+}
+
+/// Optional granular breakdown of a day — MVP can leave this empty and rely on
+/// WorkoutPlanDay.notes; this table exists so per-exercise tracking (sets/reps)
+/// can be turned on later without a schema change.
+model WorkoutExercise {
+  id               String         @id @default(uuid())
+  workoutPlanDayId String
+  workoutPlanDay   WorkoutPlanDay @relation(fields: [workoutPlanDayId], references: [id], onDelete: Cascade)
+  name             String
+  sets             Int?
+  reps             String?        // string to allow "8-12" style ranges
+  restSeconds      Int?
+  notes            String?
+  orderIndex       Int            @default(0)
+
+  @@index([workoutPlanDayId])
+}
+
+model DietPlan {
+  id        String    @id @default(uuid())
+  memberId  String
+  member    Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  coachId   String?
+  coach     Coach?    @relation(fields: [coachId], references: [id])
+  title     String
+  startDate DateTime
+  endDate   DateTime?
+  notes     String?
+
+  meals DietMeal[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([memberId])
+}
+
+model DietMeal {
+  id         String   @id @default(uuid())
+  dietPlanId String
+  dietPlan   DietPlan @relation(fields: [dietPlanId], references: [id], onDelete: Cascade)
+  mealName   String   // free text, e.g. "الإفطار" / "ما قبل التمرين"
+  items      String   // free text description
+  calories   Int?
+  orderIndex Int      @default(0)
+
+  @@index([dietPlanId])
+}
+
+// =============================================================================
+// 6) WEIGHT HISTORY & BODY MEASUREMENTS
+// =============================================================================
+
+model WeightLog {
+  id         String   @id @default(uuid())
+  memberId   String
+  member     Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  recordedAt DateTime @default(now())
+  weightKg   Decimal  @db.Decimal(5, 1)
+  notes      String?
+
+  @@index([memberId, recordedAt])
+}
+
+/// Separate from WeightLog because it's recorded far less often and holds
+/// different fields (body composition, not just weight).
+model Measurement {
+  id          String   @id @default(uuid())
+  memberId    String
+  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  recordedAt  DateTime @default(now())
+  chestCm     Decimal? @db.Decimal(5, 1)
+  waistCm     Decimal? @db.Decimal(5, 1)
+  hipCm       Decimal? @db.Decimal(5, 1)
+  armCm       Decimal? @db.Decimal(5, 1)
+  thighCm     Decimal? @db.Decimal(5, 1)
+  bodyFatPct  Decimal? @db.Decimal(4, 1)
+  notes       String?
+
+  @@index([memberId, recordedAt])
+}
+
+// =============================================================================
+// 7) PRODUCTS, INVENTORY, POS SALES
+// =============================================================================
+
+model Product {
+  id                String   @id @default(uuid())
+  name              String
+  sku               String?  @unique
+  category          String?
+  price             Decimal  @db.Decimal(10, 2)
+  costPrice         Decimal? @db.Decimal(10, 2)
+  imageUrl          String?
+  stockQuantity     Int      @default(0)
+  lowStockThreshold Int      @default(5)
+  isActive          Boolean  @default(true)
+
+  saleItems             SaleItem[]
+  inventoryTransactions InventoryTransaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+}
+
+/// Audit trail of every stock movement — restocks, manual adjustments, and
+/// automatic decrements triggered by a completed Sale.
+model InventoryTransaction {
+  id        String                    @id @default(uuid())
+  productId String
+  product   Product                   @relation(fields: [productId], references: [id])
+  type      InventoryTransactionType
+  quantity  Int                       // positive for stock-in, negative for stock-out
+  note      String?
+
+  changedByUserId String?
+  changedBy       User?   @relation("InventoryChangedBy", fields: [changedByUserId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([productId, createdAt])
+}
+
+enum InventoryTransactionType {
+  STOCK_IN
+  STOCK_OUT
+  ADJUSTMENT
+  SALE
+}
+
+/// A completed POS invoice (the "فاتورة سريعة" from the prototype).
+model Sale {
+  id              String        @id @default(uuid())
+  invoiceNumber   String        @unique
+  memberId        String?       // nullable — walk-in, non-member sales are allowed
+  member          Member?       @relation(fields: [memberId], references: [id])
+  totalAmount     Decimal       @db.Decimal(10, 2)
+  paymentMethod   PaymentMethod
+
+  soldByUserId String?
+  soldBy       User?   @relation("SaleSoldBy", fields: [soldByUserId], references: [id])
+
+  items SaleItem[]
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt]) // powers daily POS revenue aggregation
+}
+
+model SaleItem {
+  id        String  @id @default(uuid())
+  saleId    String
+  sale      Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  unitPrice Decimal @db.Decimal(10, 2)
+  subtotal  Decimal @db.Decimal(10, 2)
+
+  @@index([saleId])
+}
+
+// =============================================================================
+// 8) EXPENSES
+// =============================================================================
+
+model Expense {
+  id          String   @id @default(uuid())
+  category    String   // e.g. "إيجار", "صيانة", "رواتب" — free text, no enum lock-in
+  description String?
+  amount      Decimal  @db.Decimal(10, 2)
+  expenseDate DateTime @default(now())
+  receiptUrl  String?
+
+  paidByUserId String?
+  paidBy       User?   @relation("ExpensePaidBy", fields: [paidByUserId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([expenseDate])
+}
+
+// =============================================================================
+// 9) NOTIFICATIONS
+// =============================================================================
+
+model Notification {
+  id                 String   @id @default(uuid())
+  userId             String?  // null = broadcast to every staff user
+  user               User?    @relation(fields: [userId], references: [id])
+  memberId           String?  // optional link, e.g. "member X expires in 3 days"
+  member             Member?  @relation(fields: [memberId], references: [id])
+  type               String   // e.g. "subscription_expiring", "low_stock"
+  title              String
+  message            String
+  isRead             Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+}
+
+// =============================================================================
+// 10) SETTINGS — single-row-per-key store for gym config
+// =============================================================================
+
+model Setting {
+  key       String   @id // e.g. "gym_name", "currency", "language", "theme"
+  value     String   // stored as text; services parse JSON when needed
+  updatedAt DateTime @updatedAt
+}

@@ -1,0 +1,64 @@
+# بناء مثبّت Windows الفعلي (.exe عبر NSIS)
+#
+# لماذا عبر GitHub Actions وليس محلياً؟ لأن electron-builder يحتاج بيئة
+# Windows حقيقية (أو Wine) لإنتاج مثبّت NSIS موقَّع بشكل صحيح، وهي غير
+# متوفرة في بيئة التطوير الحالية (Linux). هذا هو الأسلوب المعياري القياسي
+# لمشاريع Electron التجارية — بناء عبر عامل تنفيذ (runner) ويندوز حقيقي في
+# CI، وليس عبر تجميع متقاطع (cross-compile) من لينكس.
+name: Build Windows Installer
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch: {}
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install root dependencies
+        run: npm install
+
+      - name: Install server dependencies
+        working-directory: server
+        run: npm install
+
+      - name: Generate Prisma client
+        working-directory: server
+        run: npm run prisma:generate
+
+      # المخططات (migrations) يجب أن تكون قد أُنشئت مسبقاً محلياً عبر
+      # "npm run prisma:migrate" وتم رفعها إلى المستودع — لا تُنشأ هنا.
+      - name: Verify migrations exist
+        shell: bash
+        run: |
+          if [ -z "$(ls -A prisma/migrations 2>/dev/null)" ]; then
+            echo "::error::لا توجد migrations في prisma/migrations — شغّل 'npm run prisma:migrate' محلياً أولاً وارفعها"
+            exit 1
+          fi
+
+      - name: Download portable PostgreSQL binaries
+        shell: bash
+        run: |
+          mkdir -p resources/pgsql
+          # ملاحظة: رابط فعلي لأرشيف PostgreSQL المحمول (zip) يُحدَّد هنا عند
+          # الإعداد الفعلي للمشروع (مثال: إصدار "binaries-windows" من
+          # enterprisedb.com). هذه الخطوة تحديداً لا يمكن اختبارها من بيئة
+          # التطوير الحالية (Linux، بدون اتصال لتنزيل ثنائيات Windows) —
+          # موثّقة بوضوح في PHASE6_NOTES.md كخطوة تتطلب إعداداً يدوياً مرة
+          # واحدة من فريق النشر.
+          echo "TODO: نزّل وفكّ أرشيف PostgreSQL المحمول لويندوز إلى resources/pgsql/"
+
+      - name: Build Windows installer
+        run: npm run dist:win
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nabd-windows-installer
+          path: dist/*.exe

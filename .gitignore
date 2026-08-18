@@ -1,0 +1,12 @@
+node_modules/
+dist/
+*.log
+.env
+.DS_Store
+resources/pgsql/bin/
+resources/pgsql/lib/
+resources/pgsql/share/
+electron/build/*.ico
+!electron/build/README.md
+.env.*
+!.env.example

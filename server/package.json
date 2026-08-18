@@ -1,0 +1,39 @@
+{
+  "name": "gms-server",
+  "version": "1.0.0",
+  "description": "نبض Gym Management System — Express + Prisma backend (local, offline-first)",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "prisma:generate": "prisma generate --schema=../prisma/schema.prisma",
+    "prisma:migrate": "prisma migrate dev --schema=../prisma/schema.prisma",
+    "prisma:deploy": "prisma migrate deploy --schema=../prisma/schema.prisma",
+    "prisma:studio": "prisma studio --schema=../prisma/schema.prisma",
+    "prisma:seed": "node ../prisma/seed.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.19.1",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "exceljs": "^4.4.0",
+    "pdfkit": "^0.15.0",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.4.0",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "multer": "^2.0.0",
+    "winston": "^3.14.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4",
+    "prisma": "^5.19.1"
+  },
+  "overrides": {
+    "brace-expansion": "^5.0.8",
+    "uuid": "^11.1.1"
+  }
+}

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تسجيل الدخول | نبض</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          base: '#09090f', surface: '#14141f', surface2: '#1a1a29',
+          border: 'rgba(255,255,255,0.08)',
+          accent: { green: '#10b981', greenDim: '#0f766e', amber: '#f59e0b', red: '#ef4444', sky: '#38bdf8' },
+          ink: { 100: '#f4f4f7', 300: '#cbcbd6', 500: '#93939f', 700: '#63636f' }
+        },
+        fontFamily: { arabic: ['Cairo', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+        boxShadow: { 'glow-green': '0 0 0 1px rgba(16,185,129,0.25), 0 8px 30px -8px rgba(16,185,129,0.35)' }
+      }
+    }
+  }
+</script>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="bg-base text-ink-100 font-arabic antialiased">
+
+<div class="login-shell">
+  <div class="w-full max-w-sm mx-4">
+    <div class="flex flex-col items-center gap-3 mb-8">
+      <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-accent-green to-accent-greenDim flex items-center justify-center shadow-glow-green">
+        <i data-lucide="activity" class="w-7 h-7 text-slate-950"></i>
+      </div>
+      <div class="text-center">
+        <p class="font-extrabold text-lg">نبض</p>
+        <p class="text-xs text-ink-700 font-mono ltr-num">GYM OS · LOCAL</p>
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-border bg-surface glass shadow-card p-6">
+      <h1 class="text-base font-bold mb-1">تسجيل الدخول</h1>
+      <p class="text-xs text-ink-500 mb-6">أدخل بيانات حسابك للوصول إلى نظام إدارة الجيم</p>
+
+      <form id="login-form" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-ink-500 mb-1.5">اسم المستخدم</label>
+          <input required id="lf-username" type="text" autocomplete="username" placeholder="admin"
+            class="w-full bg-surface2 border border-border rounded-lg px-3 py-2.5 text-sm ltr-num placeholder:text-ink-700 focus:border-accent-green/50 focus:ring-1 focus:ring-accent-green/30 transition-colors" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-ink-500 mb-1.5">كلمة المرور</label>
+          <input required id="lf-password" type="password" autocomplete="current-password" placeholder="••••••••"
+            class="w-full bg-surface2 border border-border rounded-lg px-3 py-2.5 text-sm ltr-num placeholder:text-ink-700 focus:border-accent-green/50 focus:ring-1 focus:ring-accent-green/30 transition-colors" />
+        </div>
+
+        <p id="login-error" class="hidden text-xs text-accent-red font-semibold"></p>
+
+        <button id="login-submit" type="submit" class="w-full flex items-center justify-center gap-2 bg-accent-green text-slate-950 font-bold text-sm py-3 rounded-xl shadow-glow-green hover:brightness-110 active:scale-[0.98] transition-all">
+          <i data-lucide="log-in" class="w-[18px] h-[18px]"></i> دخول
+        </button>
+      </form>
+    </div>
+
+    <p class="text-center text-[11px] text-ink-700 mt-6 font-mono ltr-num">نظام محلي بالكامل — لا يتطلب اتصال بالإنترنت</p>
+  </div>
+</div>
+
+<div id="toast-root" class="fixed bottom-6 left-6 space-y-2 z-50"></div>
+
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
+<script src="../js/core/toast.js" defer></script>
+<script src="../js/core/auth.js" defer></script>
+<script src="../js/core/http.js" defer></script>
+<script src="../js/api/authApi.js" defer></script>
+<script defer>
+  document.addEventListener('DOMContentLoaded', () => {
+    // مسجّل دخول بالفعل؟ لا داعي لعرض شاشة الدخول من جديد
+    if (window.Auth.getToken()) {
+      window.location.href = 'index.html';
+      return;
+    }
+    lucide.createIcons();
+
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const errorEl = document.getElementById('login-error');
+      const submitBtn = document.getElementById('login-submit');
+      errorEl.classList.add('hidden');
+      submitBtn.disabled = true;
+
+      const username = document.getElementById('lf-username').value.trim();
+      const password = document.getElementById('lf-password').value;
+
+      try {
+        const { data } = await window.AuthAPI.login(username, password);
+        window.Auth.setSession(data);
+        window.location.href = 'index.html';
+      } catch (err) {
+        errorEl.textContent = err.message || 'تعذّر تسجيل الدخول';
+        errorEl.classList.remove('hidden');
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+  });
+</script>
+</body>
+</html>

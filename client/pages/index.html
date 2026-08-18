@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نبض | نظام إدارة الجيم</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          base: '#09090f',
+          surface: '#14141f',
+          surface2: '#1a1a29',
+          border: 'rgba(255,255,255,0.08)',
+          accent: { green: '#10b981', greenDim: '#0f766e', amber: '#f59e0b', red: '#ef4444', sky: '#38bdf8' },
+          ink: { 100: '#f4f4f7', 300: '#cbcbd6', 500: '#93939f', 700: '#63636f' }
+        },
+        fontFamily: { arabic: ['Cairo', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+        boxShadow: {
+          'glow-green': '0 0 0 1px rgba(16,185,129,0.25), 0 8px 30px -8px rgba(16,185,129,0.35)',
+          'glow-amber': '0 0 0 1px rgba(245,158,11,0.25), 0 8px 30px -8px rgba(245,158,11,0.35)',
+          card: '0 1px 0 0 rgba(255,255,255,0.04) inset, 0 20px 40px -20px rgba(0,0,0,0.65)',
+        }
+      }
+    }
+  }
+</script>
+
+<link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body class="bg-base text-ink-100 font-arabic antialiased min-h-screen">
+
+<div class="flex min-h-screen">
+
+  <!-- ============================= الشريط الجانبي ============================= -->
+  <aside id="sidebar" class="w-64 shrink-0 border-l border-border bg-surface/60 glass flex flex-col transition-all duration-300 sticky top-0 h-screen z-30">
+    <div class="h-16 flex items-center gap-3 px-5 border-b border-border">
+      <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-accent-green to-accent-greenDim flex items-center justify-center shrink-0 shadow-glow-green">
+        <i data-lucide="activity" class="w-5 h-5 text-slate-950"></i>
+      </div>
+      <div class="label-text leading-tight">
+        <p class="font-extrabold text-sm">نبض</p>
+        <p class="text-[11px] text-ink-700 font-mono ltr-num">GYM OS · LOCAL</p>
+      </div>
+      <button onclick="toggleSidebar()" class="mr-auto text-ink-700 hover:text-ink-100 transition-colors">
+        <i data-lucide="panel-right-close" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <nav class="flex-1 py-5 px-3 space-y-1 overflow-y-auto">
+      <p class="label-text px-3 text-[10px] font-bold tracking-widest text-ink-700 mb-2">القائمة الرئيسية</p>
+
+      <button data-view="dashboard" onclick="switchView('dashboard')" class="nav-item active relative w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold text-ink-300 hover:bg-white/[0.03] transition-colors">
+        <span class="side-bar"></span>
+        <i data-lucide="layout-dashboard" class="w-[18px] h-[18px] text-accent-green shrink-0"></i>
+        <span class="label-text">لوحة التحكم</span>
+      </button>
+      <button data-view="members" onclick="switchView('members')" class="nav-item relative w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold text-ink-300 hover:bg-white/[0.03] transition-colors">
+        <span class="side-bar"></span>
+        <i data-lucide="users" class="w-[18px] h-[18px] shrink-0"></i>
+        <span class="label-text">إدارة المشتركين</span>
+      </button>
+      <button data-view="weight" onclick="switchView('weight')" class="nav-item relative w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold text-ink-300 hover:bg-white/[0.03] transition-colors">
+        <span class="side-bar"></span>
+        <i data-lucide="line-chart" class="w-[18px] h-[18px] shrink-0"></i>
+        <span class="label-text">متابعة الوزن والتطور</span>
+      </button>
+      <button data-view="pos" onclick="switchView('pos')" class="nav-item relative w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold text-ink-300 hover:bg-white/[0.03] transition-colors">
+        <span class="side-bar"></span>
+        <i data-lucide="wallet" class="w-[18px] h-[18px] shrink-0"></i>
+        <span class="label-text">المالية والمبيعات</span>
+      </button>
+      <button data-view="vip" onclick="switchView('vip')" class="nav-item relative w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold text-ink-300 hover:bg-white/[0.03] transition-colors">
+        <span class="side-bar"></span>
+        <i data-lucide="crown" class="w-[18px] h-[18px] text-accent-amber shrink-0"></i>
+        <span class="label-text">قسم الـ VIP</span>
+      </button>
+
+      <p class="label-text px-3 text-[10px] font-bold tracking-widest text-ink-700 mt-6 mb-2">الإدارة</p>
+      <button data-view="reports" onclick="switchView('reports')" class="nav-item relative w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold text-ink-300 hover:bg-white/[0.03] transition-colors">
+        <span class="side-bar"></span>
+        <i data-lucide="bar-chart-3" class="w-[18px] h-[18px] shrink-0"></i>
+        <span class="label-text">المصروفات والتقارير</span>
+      </button>
+      <button data-view="settings" onclick="switchView('settings')" class="nav-item relative w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold text-ink-300 hover:bg-white/[0.03] transition-colors">
+        <span class="side-bar"></span>
+        <i data-lucide="settings" class="w-[18px] h-[18px] shrink-0"></i>
+        <span class="label-text">الإعدادات</span>
+      </button>
+    </nav>
+
+    <div class="p-3 border-t border-border">
+      <div class="flex items-center gap-3 px-2 py-2 rounded-lg">
+        <div id="current-user-avatar" class="w-9 h-9 rounded-full bg-surface2 border border-border flex items-center justify-center text-xs font-mono font-bold shrink-0">؟</div>
+        <div class="label-text leading-tight min-w-0">
+          <p id="current-user-name" class="text-sm font-semibold truncate">—</p>
+          <p id="current-user-role" class="text-[11px] text-ink-700">—</p>
+        </div>
+        <button onclick="Auth.logout()" title="تسجيل الخروج" class="label-text mr-auto text-ink-700 hover:text-accent-red transition-colors">
+          <i data-lucide="log-out" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============================= المحتوى الرئيسي ============================= -->
+  <div class="flex-1 flex flex-col min-w-0">
+
+    <!-- ---------- الهيدر العلوي ---------- -->
+    <header class="h-16 shrink-0 border-b border-border bg-surface/40 glass sticky top-0 z-20 flex items-center gap-6 px-6">
+      <div class="relative w-80">
+        <i data-lucide="search" class="w-4 h-4 text-ink-700 absolute right-3 top-1/2 -translate-y-1/2"></i>
+        <input id="global-search" type="text" placeholder="ابحث عن مشترك، رقم هاتف..."
+          class="w-full bg-surface2 border border-border rounded-lg pr-9 pl-3 py-2 text-sm placeholder:text-ink-700 focus:border-accent-green/50 focus:ring-1 focus:ring-accent-green/30 transition-colors" />
+      </div>
+
+      <div class="hidden lg:flex items-center gap-6 mr-2 text-xs">
+        <div class="flex items-center gap-2">
+          <span class="w-1.5 h-1.5 rounded-full bg-accent-green"></span>
+          <span class="text-ink-500">أعضاء نشطون</span>
+          <span class="font-mono font-bold text-ink-100 ltr-num" id="hdr-active">0</span>
+        </div>
+        <div class="w-px h-4 bg-border"></div>
+        <div class="flex items-center gap-2">
+          <span class="w-1.5 h-1.5 rounded-full bg-accent-amber"></span>
+          <span class="text-ink-500">قريبة الانتهاء</span>
+          <span class="font-mono font-bold text-ink-100 ltr-num" id="hdr-expiring">0</span>
+        </div>
+      </div>
+
+      <div class="mr-auto flex items-center gap-4">
+        <div class="relative">
+          <button id="notifications-bell" onclick="toggleNotifications()" class="relative text-ink-500 hover:text-ink-100 transition-colors">
+            <i data-lucide="bell" class="w-[18px] h-[18px]"></i>
+            <span id="notifications-badge" class="hidden absolute -top-1.5 -left-1.5 min-w-[16px] h-4 px-1 rounded-full bg-accent-amber text-[9px] font-bold text-slate-950 flex items-center justify-center">0</span>
+          </button>
+          <div id="notifications-panel" class="hidden absolute left-0 mt-3 w-80 bg-surface border border-border rounded-xl shadow-card overflow-hidden z-30">
+            <div class="px-4 py-3 border-b border-border">
+              <p class="text-sm font-bold">الإشعارات</p>
+            </div>
+            <div id="notifications-list" class="max-h-80 overflow-y-auto"></div>
+          </div>
+        </div>
+        <div class="text-left leading-tight">
+          <p id="header-time" class="text-sm font-mono font-semibold ltr-num"></p>
+          <p id="header-date" class="text-[11px] text-ink-700"></p>
+        </div>
+        <button data-requires="members.create" onclick="openMemberModal()" class="flex items-center gap-2 bg-accent-green text-slate-950 text-sm font-bold px-3.5 py-2 rounded-lg shadow-glow-green hover:brightness-110 active:scale-95 transition-all">
+          <i data-lucide="user-plus" class="w-4 h-4"></i>
+          مشترك جديد
+        </button>
+      </div>
+    </header>
+
+    <main class="flex-1 p-6 max-w-[1600px] w-full mx-auto">
+
+      <!-- =========================================================
+           1) لوحة التحكم — كل الأرقام من /api/dashboard/stats
+      ========================================================== -->
+      <section id="view-dashboard" class="view-section active space-y-6 fade-in">
+        <div class="flex items-end justify-between">
+          <div>
+            <h1 class="text-xl font-extrabold tracking-tight">لوحة التحكم الرئيسية</h1>
+            <p id="dashboard-date" class="text-sm text-ink-500 mt-0.5"></p>
+          </div>
+          <div class="flex items-center gap-2 text-xs text-ink-700 font-mono">
+            <i data-lucide="database" class="w-3.5 h-3.5 text-accent-green"></i>
+            <span class="ltr-num">DATA: PostgreSQL (local)</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div class="rounded-2xl border border-border bg-surface glass shadow-card p-5">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-xs font-semibold text-ink-500">الأعضاء النشطون</p>
+                <p id="stat-active" class="text-3xl font-extrabold font-mono mt-2 ltr-num">—</p>
+                <p class="text-xs text-accent-green font-semibold mt-1.5 flex items-center gap-1">
+                  <i data-lucide="users" class="w-3.5 h-3.5"></i> <span id="stat-total" class="ltr-num">—</span> إجمالي المشتركين
+                </p>
+              </div>
+              <div class="w-10 h-10 rounded-xl bg-accent-green/10 flex items-center justify-center">
+                <i data-lucide="users" class="w-5 h-5 text-accent-green"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-2xl border border-border bg-surface glass shadow-card p-5">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-xs font-semibold text-ink-500">إيرادات اليوم</p>
+                <p class="text-3xl font-extrabold font-mono mt-2 ltr-num"><span id="stat-revenue">—</span> <span class="text-base text-ink-500">ج.م</span></p>
+                <p class="text-xs text-ink-500 font-semibold mt-1.5 flex items-center gap-1">
+                  <i data-lucide="receipt" class="w-3.5 h-3.5"></i> <span id="stat-sales-count" class="ltr-num">—</span> عملية دفع
+                </p>
+              </div>
+              <div class="w-10 h-10 rounded-xl bg-accent-sky/10 flex items-center justify-center">
+                <i data-lucide="banknote" class="w-5 h-5 text-accent-sky"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-2xl border border-accent-amber/20 bg-surface glass shadow-card p-5">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-xs font-semibold text-ink-500">اشتراكات قريبة من الانتهاء</p>
+                <p id="stat-expiring" class="text-3xl font-extrabold font-mono mt-2 text-accent-amber ltr-num">—</p>
+                <p class="text-xs text-accent-amber/80 font-semibold mt-1.5 flex items-center gap-1">
+                  <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> خلال ١٠ أيام
+                </p>
+              </div>
+              <div class="w-10 h-10 rounded-xl bg-accent-amber/10 flex items-center justify-center">
+                <i data-lucide="calendar-clock" class="w-5 h-5 text-accent-amber"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- الحضور السريع — بحث عن عضو، معاينة حالته، وتسجيل حضوره -->
+        <section class="rounded-2xl border border-border bg-surface glass shadow-card overflow-hidden">
+          <div class="px-6 pt-5 pb-4 border-b border-border flex items-center gap-2.5">
+            <i data-lucide="zap" class="w-[18px] h-[18px] text-accent-green"></i>
+            <h2 class="font-bold text-sm">الحضور السريع</h2>
+            <span class="text-xs text-ink-700 font-mono ltr-num mr-auto">حضور اليوم: <span id="qa-count" class="text-ink-100 font-bold">0</span></span>
+          </div>
+          <div class="p-6 grid grid-cols-1 lg:grid-cols-5 gap-6">
+            <div class="lg:col-span-2 flex flex-col gap-3">
+              <div class="relative">
+                <i data-lucide="scan-search" class="w-4 h-4 text-ink-700 absolute right-3.5 top-1/2 -translate-y-1/2"></i>
+                <input id="qa-search" type="text" placeholder="ابحث بالاسم أو رقم الهاتف..."
+                  oninput="handleQuickSearch(this.value)"
+                  class="w-full bg-surface2 border border-border rounded-xl pr-10 pl-3 py-3 text-sm placeholder:text-ink-700 focus:border-accent-green/50 focus:ring-1 focus:ring-accent-green/30 transition-colors" />
+              </div>
+              <div id="qa-results" class="space-y-1.5 max-h-60 overflow-y-auto"></div>
+            </div>
+            <div class="lg:col-span-3">
+              <div id="qa-empty" class="h-full min-h-[180px] rounded-xl border border-dashed border-border flex flex-col items-center justify-center text-center gap-2 text-ink-700">
+                <i data-lucide="id-card" class="w-7 h-7"></i>
+                <p class="text-sm">ستظهر بطاقة العضو هنا</p>
+                <p class="text-xs">ابحث بالاسم أو رقم الهاتف لمعرفة حالته وتسجيل حضوره</p>
+              </div>
+              <div id="qa-preview" class="hidden h-full"></div>
+            </div>
+          </div>
+        </section>
+
+        <div class="rounded-2xl border border-border bg-surface glass shadow-card overflow-hidden">
+          <div class="px-6 pt-5 pb-4 border-b border-border flex items-center gap-2.5">
+            <i data-lucide="bell-ring" class="w-[18px] h-[18px] text-accent-amber"></i>
+            <h2 class="font-bold text-sm">تنبيهات الاشتراكات القريبة من الانتهاء</h2>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-[11px] text-ink-700 border-b border-border">
+                  <th class="font-semibold px-6 py-3 text-right">المشترك</th>
+                  <th class="font-semibold px-4 py-3 text-right">رقم الهاتف</th>
+                  <th class="font-semibold px-4 py-3 text-right">تاريخ الانتهاء</th>
+                  <th class="font-semibold px-4 py-3 text-right">الأيام المتبقية</th>
+                  <th class="font-semibold px-6 py-3 text-left">إجراء</th>
+                </tr>
+              </thead>
+              <tbody id="expiring-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+           2) إدارة المشتركين — /api/members + /api/subscriptions
+      ========================================================== -->
+      <section id="view-members" class="view-section space-y-6 fade-in">
+        <div class="flex items-end justify-between flex-wrap gap-3">
+          <div>
+            <h1 class="text-xl font-extrabold tracking-tight">إدارة المشتركين</h1>
+            <p class="text-sm text-ink-500 mt-0.5">عرض، بحث، وتحديث بيانات المشتركين</p>
+          </div>
+          <button data-requires="members.create" onclick="openMemberModal()" class="flex items-center gap-2 bg-accent-green text-slate-950 text-sm font-bold px-4 py-2.5 rounded-lg shadow-glow-green hover:brightness-110 active:scale-95 transition-all">
+            <i data-lucide="user-plus" class="w-4 h-4"></i> إضافة مشترك جديد
+          </button>
+        </div>
+
+        <div class="rounded-2xl border border-border bg-surface glass shadow-card overflow-hidden">
+          <div class="px-6 py-4 border-b border-border flex items-center gap-3 flex-wrap">
+            <div class="relative w-72">
+              <i data-lucide="search" class="w-4 h-4 text-ink-700 absolute right-3 top-1/2 -translate-y-1/2"></i>
+              <input id="members-search" oninput="renderMembersTable()" type="text" placeholder="ابحث بالاسم أو رقم الهاتف..."
+                class="w-full bg-surface2 border border-border rounded-lg pr-9 pl-3 py-2 text-sm placeholder:text-ink-700 focus:border-accent-green/50 focus:ring-1 focus:ring-accent-green/30 transition-colors" />
+            </div>
+            <div class="flex items-center gap-1.5 bg-surface2 border border-border rounded-lg p-1">
+              <button data-filter="all" onclick="setMemberFilter('all')" class="filter-btn px-3 py-1.5 rounded-md text-xs font-semibold transition-colors">الكل</button>
+              <button data-filter="active" onclick="setMemberFilter('active')" class="filter-btn px-3 py-1.5 rounded-md text-xs font-semibold transition-colors">نشط</button>
+              <button data-filter="expired" onclick="setMemberFilter('expired')" class="filter-btn px-3 py-1.5 rounded-md text-xs font-semibold transition-colors">منتهي</button>
+            </div>
+            <span class="text-xs text-ink-700 font-mono mr-auto ltr-num" id="members-count"></span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-[11px] text-ink-700 border-b border-border">
+                  <th class="font-semibold px-6 py-3 text-right">المشترك</th>
+                  <th class="font-semibold px-4 py-3 text-right">الهاتف</th>
+                  <th class="font-semibold px-4 py-3 text-right">نوع الاشتراك</th>
+                  <th class="font-semibold px-4 py-3 text-right">تاريخ الانتهاء</th>
+                  <th class="font-semibold px-4 py-3 text-right">الحالة</th>
+                  <th class="font-semibold px-6 py-3 text-left">إجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="members-tbody"></tbody>
+            </table>
+          </div>
+          <div class="px-6 py-4 border-t border-border flex items-center justify-between">
+            <span id="members-page-label" class="text-xs text-ink-500 font-mono ltr-num"></span>
+            <div class="flex items-center gap-2">
+              <button id="members-prev-btn" onclick="goToPage(-1)" class="page-btn"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+              <button id="members-next-btn" onclick="goToPage(1)" class="page-btn"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+           3) متابعة الوزن — قيد الربط في Phase 5
+      ========================================================== -->
+      <section id="view-weight" class="view-section space-y-6 fade-in">
+        <div>
+          <h1 class="text-xl font-extrabold tracking-tight">متابعة الوزن والتطور</h1>
+          <p class="text-sm text-ink-500 mt-0.5">سجل وزن كل مشترك مقارنة بالوزن المستهدف</p>
+        </div>
+
+        <div class="rounded-2xl border border-border bg-surface glass shadow-card p-5">
+          <div class="flex items-center gap-3 flex-wrap">
+            <i data-lucide="user-round" class="w-4 h-4 text-ink-500"></i>
+            <span class="text-sm text-ink-500">اختر المشترك:</span>
+            <select id="weight-member-select" onchange="renderWeightView()" class="bg-surface2 border border-border rounded-lg px-3 py-2 text-sm font-semibold"></select>
+            <button onclick="openWeightModal()" class="mr-auto flex items-center gap-2 bg-surface2 border border-border hover:border-accent-green/40 text-sm font-semibold px-3.5 py-2 rounded-lg transition-colors">
+              <i data-lucide="plus-circle" class="w-4 h-4 text-accent-green"></i> إضافة قياس جديد
+            </button>
+          </div>
+        </div>
+
+        <div id="weight-empty" class="hidden rounded-2xl border border-dashed border-border p-10 text-center text-ink-700">
+          <p class="text-sm">لا يوجد مشتركون بعد — أضف مشتركاً أولاً من شاشة إدارة المشتركين.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="rounded-2xl border border-border bg-surface glass shadow-card p-5 flex flex-col gap-4">
+            <h3 class="text-sm font-bold flex items-center gap-2"><i data-lucide="target" class="w-4 h-4 text-accent-green"></i> هدف الوزن</h3>
+            <div id="weight-goal-card" class="flex-1 flex flex-col gap-4"></div>
+          </div>
+          <div class="lg:col-span-2 rounded-2xl border border-border bg-surface glass shadow-card p-5">
+            <h3 class="text-sm font-bold flex items-center gap-2 mb-4"><i data-lucide="activity" class="w-4 h-4 text-accent-green"></i> التطور عبر الزمن (كجم)</h3>
+            <div id="weight-chart" class="w-full"></div>
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-border bg-surface glass shadow-card overflow-hidden">
+          <div class="px-6 pt-5 pb-4 border-b border-border flex items-center gap-2.5">
+            <i data-lucide="table-2" class="w-[18px] h-[18px] text-accent-green"></i>
+            <h2 class="font-bold text-sm">السجل الكامل</h2>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-[11px] text-ink-700 border-b border-border">
+                  <th class="font-semibold px-6 py-3 text-right">التاريخ</th>
+                  <th class="font-semibold px-4 py-3 text-right">الوزن المسجل</th>
+                  <th class="font-semibold px-4 py-3 text-right">الفرق عن الهدف</th>
+                  <th class="font-semibold px-4 py-3 text-right">الاتجاه</th>
+                </tr>
+              </thead>
+              <tbody id="weight-log-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+           4) المالية والمبيعات — قيد الربط في Phase 5
+      ========================================================== -->
+      <section id="view-pos" class="view-section space-y-6 fade-in">
+        <div>
+          <h1 class="text-xl font-extrabold tracking-tight">المالية والمبيعات</h1>
+          <p class="text-sm text-ink-500 mt-0.5">إيرادات الاشتراكات اليومية ومبيعات البار الداخلي</p>
+        </div>
+
+        <div class="rounded-2xl border border-border bg-surface glass shadow-card overflow-hidden">
+          <div class="px-6 pt-5 pb-4 border-b border-border flex items-center gap-2.5">
+            <i data-lucide="credit-card" class="w-[18px] h-[18px] text-accent-sky"></i>
+            <h2 class="font-bold text-sm">إيرادات الاشتراكات اليوم</h2>
+            <span class="text-xs text-ink-700 font-mono ltr-num mr-auto">إجمالي: <span id="sub-revenue-total" class="text-ink-100 font-bold">0</span> ج.م</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-[11px] text-ink-700 border-b border-border">
+                  <th class="font-semibold px-6 py-3 text-right">المشترك</th>
+                  <th class="font-semibold px-4 py-3 text-right">نوع العملية</th>
+                  <th class="font-semibold px-4 py-3 text-right">طريقة الدفع</th>
+                  <th class="font-semibold px-4 py-3 text-right">الوقت</th>
+                  <th class="font-semibold px-6 py-3 text-left">المبلغ</th>
+                </tr>
+              </thead>
+              <tbody id="subrevenue-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2 rounded-2xl border border-border bg-surface glass shadow-card p-5">
+            <h2 class="font-bold text-sm flex items-center gap-2 mb-4"><i data-lucide="cup-soda" class="w-[18px] h-[18px] text-accent-amber"></i> مبيعات بار الجيم — إضافة عنصر</h2>
+            <div id="pos-items-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
+          </div>
+
+          <div class="rounded-2xl border border-accent-green/25 bg-surface glass shadow-glow-green p-5 flex flex-col h-fit sticky top-24">
+            <h2 class="font-bold text-sm flex items-center gap-2 mb-4"><i data-lucide="receipt-text" class="w-[18px] h-[18px] text-accent-green"></i> فاتورة سريعة</h2>
+            <div id="cart-items" class="space-y-2 min-h-[100px] max-h-72 overflow-y-auto"></div>
+            <div id="cart-empty" class="text-center text-ink-700 text-xs py-8">لم تتم إضافة عناصر بعد</div>
+            <div class="border-t border-border mt-4 pt-4 space-y-3">
+              <div>
+                <label class="block text-xs font-semibold text-ink-500 mb-1.5">طريقة الدفع</label>
+                <select id="pos-payment-method" class="w-full bg-surface2 border border-border rounded-lg px-3 py-2 text-sm">
+                  <option value="CASH">نقدي</option>
+                  <option value="CARD">فيزا</option>
+                  <option value="WALLET">محفظة إلكترونية</option>
+                  <option value="OTHER">أخرى</option>
+                </select>
+              </div>
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-ink-500">الإجمالي</span>
+                <span class="font-mono font-extrabold text-lg ltr-num"><span id="cart-total">0</span> ج.م</span>
+              </div>
+            </div>
+            <button onclick="completeInvoice()" class="mt-4 w-full flex items-center justify-center gap-2 bg-accent-green text-slate-950 font-bold text-sm py-3 rounded-xl shadow-glow-green hover:brightness-110 active:scale-[0.98] transition-all">
+              <i data-lucide="check-circle-2" class="w-[18px] h-[18px]"></i> إتمام الفاتورة
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+           5) قسم الـ VIP — قيد الربط في Phase 5
+      ========================================================== -->
+      <section id="view-vip" class="view-section space-y-6 fade-in">
+        <div class="flex items-end justify-between flex-wrap gap-3">
+          <div>
+            <h1 class="text-xl font-extrabold tracking-tight flex items-center gap-2">
+              <i data-lucide="crown" class="w-5 h-5 text-accent-amber"></i> قسم المشتركين الـ VIP
+            </h1>
+            <p class="text-sm text-ink-500 mt-0.5">خطط تمارين وتغذية مخصصة ومتابعة أسبوعية</p>
+          </div>
+          <select id="vip-member-select" onchange="renderVipView()" class="bg-surface2 border border-accent-amber/30 rounded-lg px-3 py-2 text-sm font-semibold"></select>
+        </div>
+
+        <div id="vip-empty" class="hidden rounded-2xl border border-dashed border-border p-10 text-center text-ink-700">
+          <i data-lucide="crown" class="w-8 h-8 mx-auto mb-2"></i>
+          <p class="text-sm">لا يوجد أعضاء VIP حالياً. أضف مشتركاً واختر نوع اشتراك بلاتيني (VIP).</p>
+        </div>
+
+        <div id="vip-content" class="space-y-6">
+          <div id="vip-profile-card" class="rounded-2xl border border-accent-amber/25 bg-surface glass shadow-glow-amber p-6"></div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="rounded-2xl border border-border bg-surface glass shadow-card overflow-hidden">
+              <div class="px-6 pt-5 pb-4 border-b border-border flex items-center gap-2.5">
+                <i data-lucide="dumbbell" class="w-[18px] h-[18px] text-accent-amber"></i>
+                <h2 class="font-bold text-sm">جدول التمارين</h2>
+                <button onclick="openWorkoutPlanModal()" class="mr-auto text-xs font-semibold text-accent-amber hover:text-accent-amber/80 flex items-center gap-1">
+                  <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> خطة جديدة
+                </button>
+              </div>
+              <div id="vip-workout-table" class="divide-y divide-border"></div>
+            </div>
+
+            <div class="rounded-2xl border border-border bg-surface glass shadow-card overflow-hidden">
+              <div class="px-6 pt-5 pb-4 border-b border-border flex items-center gap-2.5">
+                <i data-lucide="salad" class="w-[18px] h-[18px] text-accent-green"></i>
+                <h2 class="font-bold text-sm">النظام الغذائي</h2>
+                <button onclick="openDietPlanModal()" class="mr-auto text-xs font-semibold text-accent-green hover:text-accent-green/80 flex items-center gap-1">
+                  <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> نظام جديد
+                </button>
+              </div>
+              <div id="vip-diet-plan" class="p-5 space-y-4"></div>
+            </div>
+          </div>
+
+          <div class="rounded-2xl border border-border bg-surface glass shadow-card overflow-hidden">
+            <div class="px-6 pt-5 pb-4 border-b border-border flex items-center gap-2.5">
+              <i data-lucide="calendar-check" class="w-[18px] h-[18px] text-accent-green"></i>
+              <h2 class="font-bold text-sm">سجل المتابعة الأخير (الوزن)</h2>
+            </div>
+            <div id="vip-weekly-log" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-5"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+           6) المصروفات والتقارير
+      ========================================================== -->
+      <section id="view-reports" class="view-section space-y-6 fade-in">
+        <div class="flex items-end justify-between flex-wrap gap-3">
+          <div>
+            <h1 class="text-xl font-extrabold tracking-tight">المصروفات والتقارير</h1>
+            <p class="text-sm text-ink-500 mt-0.5">نظرة مالية على آخر ٣٠ يوماً (إيرادات، مصروفات، صافي الربح)</p>
+          </div>
+          <a id="export-members-link" href="#" target="_blank" class="flex items-center gap-2 bg-surface2 border border-border hover:border-accent-green/40 text-sm font-semibold px-3.5 py-2 rounded-lg transition-colors">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4 text-accent-green"></i> تصدير الأعضاء Excel
+          </a>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div class="rounded-2xl border border-border bg-surface glass shadow-card p-5">
+            <p class="text-xs font-semibold text-ink-500">إجمالي الإيرادات</p>
+            <p id="rep-total-revenue" class="text-2xl font-extrabold font-mono mt-2 text-accent-green ltr-num">—</p>
+          </div>
+          <div class="rounded-2xl border border-border bg-surface glass shadow-card p-5">
+            <p class="text-xs font-semibold text-ink-500">إجمالي المصروفات</p>
+            <p id="rep-total-expenses" class="text-2xl font-extrabold font-mono mt-2 text-accent-red ltr-num">—</p>
+          </div>
+          <div class="rounded-2xl border border-border bg-surface glass shadow-card p-5">
+            <p class="text-xs font-semibold text-ink-500">صافي الربح</p>
+            <p id="rep-net-profit" class="text-2xl font-extrabold font-mono mt-2 ltr-num">—</p>
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-border bg-surface glass shadow-card p-5">
+          <h3 class="text-sm font-bold flex items-center gap-2 mb-4"><i data-lucide="trending-up" class="w-4 h-4 text-accent-green"></i> الإيراد اليومي</h3>
+          <div id="rep-revenue-chart" class="w-full"></div>
+        </div>
+
+        <div class="rounded-2xl border border-border bg-surface glass shadow-card overflow-hidden">
+          <div class="px-6 pt-5 pb-4 border-b border-border flex items-center gap-2.5">
+            <i data-lucide="receipt" class="w-[18px] h-[18px] text-accent-red"></i>
+            <h2 class="font-bold text-sm">المصروفات</h2>
+            <button onclick="openExpenseModal()" class="mr-auto text-xs font-semibold text-accent-green flex items-center gap-1"><i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> إضافة مصروف</button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-[11px] text-ink-700 border-b border-border">
+                  <th class="font-semibold px-6 py-3 text-right">التصنيف</th>
+                  <th class="font-semibold px-4 py-3 text-right">الوصف</th>
+                  <th class="font-semibold px-4 py-3 text-right">التاريخ</th>
+                  <th class="font-semibold px-6 py-3 text-left">المبلغ</th>
+                  <th class="font-semibold px-4 py-3 text-left"></th>
+                </tr>
+              </thead>
+              <tbody id="expenses-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+           7) الإعدادات
+      ========================================================== -->
+      <section id="view-settings" class="view-section space-y-6 fade-in">
+        <div>
+          <h1 class="text-xl font-extrabold tracking-tight">الإعدادات</h1>
+          <p class="text-sm text-ink-500 mt-0.5">بيانات الجيم الأساسية، والنسخ الاحتياطي المحلي</p>
+        </div>
+
+        <div class="rounded-2xl border border-border bg-surface glass shadow-card p-6 max-w-xl">
+          <h2 class="font-bold text-sm mb-4 flex items-center gap-2"><i data-lucide="building-2" class="w-[18px] h-[18px] text-accent-green"></i> بيانات الجيم</h2>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-xs font-semibold text-ink-500 mb-1.5">اسم الجيم</label>
+              <input id="set-gym-name" type="text" class="w-full bg-surface2 border border-border rounded-lg px-3 py-2.5 text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-ink-500 mb-1.5">العملة</label>
+              <input id="set-currency" type="text" class="w-full bg-surface2 border border-border rounded-lg px-3 py-2.5 text-sm ltr-num" />
+            </div>
+            <p class="text-[11px] text-ink-700 leading-relaxed">ملاحظة: تغيير العملة هنا يحفظها في الإعدادات، لكن ربطها لتغيير رمز "ج.م" المعروض في كل شاشات التطبيق تلقائياً هو تحسين مستقبلي، وليس مفعّلاً بعد.</p>
+            <button onclick="saveSettings()" class="flex items-center gap-2 bg-accent-green text-slate-950 font-bold text-sm px-4 py-2.5 rounded-lg hover:brightness-110 transition-all">
+              <i data-lucide="save" class="w-4 h-4"></i> حفظ الإعدادات
+            </button>
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-border bg-surface glass shadow-card p-6 max-w-xl">
+          <h2 class="font-bold text-sm mb-4 flex items-center gap-2"><i data-lucide="database-backup" class="w-[18px] h-[18px] text-accent-amber"></i> النسخ الاحتياطي المحلي</h2>
+          <p class="text-xs text-ink-500 mb-4">تُحفظ النسخ الاحتياطية كملفات .sql على نفس جهاز الجيم فقط.</p>
+          <button onclick="createBackupNow()" class="flex items-center gap-2 bg-surface2 border border-accent-amber/30 hover:border-accent-amber/60 text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors mb-4">
+            <i data-lucide="download" class="w-4 h-4 text-accent-amber"></i> إنشاء نسخة احتياطية الآن
+          </button>
+          <div id="backups-list" class="space-y-2"></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- ============================= المودال: إضافة مشترك ============================= -->
+<div id="member-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+  <div class="modal-overlay absolute inset-0 bg-black/70" onclick="closeMemberModal()"></div>
+  <div class="modal-panel relative w-full max-w-lg bg-surface border border-border rounded-2xl shadow-card p-6">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="font-bold text-base flex items-center gap-2"><i data-lucide="user-plus" class="w-[18px] h-[18px] text-accent-green"></i> إضافة مشترك جديد</h3>
+      <button onclick="closeMemberModal()" class="text-ink-500 hover:text-ink-100 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <form id="member-form" onsubmit="submitMemberForm(event)" class="space-y-4">
+      <div>
+        <label class="block text-xs font-semibold text-ink-500 mb-1.5">الاسم بالكامل</label>
+        <input required type="text" id="mf-name" placeholder="مثال: أحمد فاروق" class="w-full bg-surface2 border border-border rounded-lg px-3 py-2.5 text-sm placeholder:text-ink-700 focus:border-accent-green/50 focus:ring-1 focus:ring-accent-green/30 transition-colors" />
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-ink-500 mb-1.5">رقم الهاتف</label>
+        <input required type="tel" id="mf-phone" placeholder="01xxxxxxxxx" pattern="01[0-9]{9}" class="w-full bg-surface2 border border-border rounded-lg px-3 py-2.5 text-sm font-mono ltr-num placeholder:text-ink-700 placeholder:font-arabic focus:border-accent-green/50 focus:ring-1 focus:ring-accent-green/30 transition-colors" />
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-semibold text-ink-500 mb-1.5">تاريخ الاشتراك</label>
+          <input required type="date" id="mf-start" class="w-full bg-surface2 border border-border rounded-lg px-3 py-2.5 text-sm font-mono focus:border-accent-green/50 focus:ring-1 focus:ring-accent-green/30 transition-colors" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-ink-500 mb-1.5">طريقة الدفع</label>
+          <select id="mf-payment" class="w-full bg-surface2 border border-border rounded-lg px-3 py-2.5 text-sm focus:border-accent-green/50 focus:ring-1 focus:ring-accent-green/30 transition-colors">
+            <option value="CASH">نقدي</option>
+            <option value="CARD">فيزا</option>
+            <option value="WALLET">محفظة إلكترونية</option>
+            <option value="OTHER">أخرى</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-ink-500 mb-1.5">نوع الاشتراك</label>
+        <select id="mf-type" class="w-full bg-surface2 border border-border rounded-lg px-3 py-2.5 text-sm focus:border-accent-green/50 focus:ring-1 focus:ring-accent-green/30 transition-colors">
+          <option>جارِ التحميل...</option>
+        </select>
+      </div>
+      <p id="mf-error" class="hidden text-xs text-accent-red font-semibold"></p>
+      <button type="submit" class="w-full flex items-center justify-center gap-2 bg-accent-green text-slate-950 font-bold text-sm py-3 rounded-xl shadow-glow-green hover:brightness-110 active:scale-[0.98] transition-all mt-2">
+        <i data-lucide="save" class="w-[18px] h-[18px]"></i> حفظ المشترك
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ============================= المودال: تجديد اشتراك ============================= -->
+<div id="renew-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+  <div class="modal-overlay absolute inset-0 bg-black/70" onclick="closeRenewModal()"></div>
+  <div class="modal-panel relative w-full max-w-sm bg-surface border border-border rounded-2xl shadow-card p-6">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="font-bold text-base flex items-center gap-2"><i data-lucide="rotate-cw" class="w-[18px] h-[18px] text-accent-amber"></i> تجديد اشتراك</h3>
+      <button onclick="closeRenewModal()" class="text-ink-500 hover:text-ink-100 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <p class="text-xs text-ink-500 mb-4">العضو: <span id="renew-member-name" class="text-ink-100 font-semibold"></span></p>
+    <form onsubmit="submitRenewForm(event)" class="space-y-4">
+      <div>
+        <label class="block text-xs font-semibold text-ink-500 mb-1.5">نوع الاشتراك الجديد</label>
+        <select id="rf-type" class="w-full bg-surface2 border border-border rounded-lg px-3 py-2.5 text-sm focus:border-accent-green/50 focus:ring-1 focus:ring-accent-green/30 transition-colors">
+          <option>جارِ التحميل...</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-ink-500 mb-1.5">طريقة الدفع</label>
+        <select id="rf-payment" class="w-full bg-surface2 border border-border rounded-lg px-3 py-2.5 text-sm focus:border-accent-green/50 focus:ring-1 focus:ring-accent-green/30 transition-colors">
+          <option value="CASH">نقدي</option>
+          <option value="CARD">فيزا</option>
+          <option value="WALLET">محفظة إلكترونية</option>
+          <option value="OTHER">أخرى</option>
+        </select>
+      </div>
+      <button type="submit" class="w-full flex items-center justify-center gap-2 bg-accent-amber text-slate-950 font-bold text-sm py-3 rounded-xl shadow-glow-amber hover:brightness-110 active:scale-[0.98] transition-all mt-2">
+        <i data-lucide="check-circle-2" class="w-[18px] h-[18px]"></i> تأكيد التجديد
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ============================= المودال: إضافة قياس وزن ============================= -->
+<div id="weight-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+  <div class="modal-overlay absolute inset-0 bg-black/70" onclick="closeWeightModal()"></div>
+  <div class="modal-panel relative w-full max-w-sm bg-surface border border-border rounded-2xl shadow-card p-6">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="font-bold text-base flex items-center gap-2"><i data-lucide="scale" class="w-[18px] h-[18px] text-accent-green"></i> إضافة قياس جديد</h3>
+      <button onclick="closeWeightModal()" class="text-ink-500 hover:text-ink-100 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <form onsubmit="submitWeightForm(event)" class="space-y-4">
+      <div>
+        <label class="block text-xs font-semibold text-ink-500 mb-1.5">التاريخ</label>
+        <input required type="date" id="wf-date" class="w-full bg-surface2 border border-border rounded-lg px-3 py-2.5 text-sm font-mono focus:border-accent-green/50 focus:ring-1 focus:ring-accent-green/30 transition-colors" />
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-ink-500 mb-1.5">الوزن (كجم)</label>
+        <input required type="number" step="0.1" min="20" max="400" id="wf-weight" placeholder="مثال: 84.5" class="w-full bg-surface2 border border-border rounded-lg px-3 py-2.5 text-sm font-mono ltr-num placeholder:text-ink-700 placeholder:font-arabic focus:border-accent-green/50 focus:ring-1 focus:ring-accent-green/30 transition-colors" />
+      </div>
+      <button type="submit" class="w-full flex items-center justify-center gap-2 bg-accent-green text-slate-950 font-bold text-sm py-3 rounded-xl shadow-glow-green hover:brightness-110 active:scale-[0.98] transition-all mt-2">
+        <i data-lucide="save" class="w-[18px] h-[18px]"></i> حفظ القياس
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ============================= المودال: خطة تمرين جديدة ============================= -->
+<div id="workout-plan-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+  <div class="modal-overlay absolute inset-0 bg-black/70" onclick="closeWorkoutPlanModal()"></div>
+  <div class="modal-panel relative w-full max-w-2xl bg-surface border border-border rounded-2xl shadow-card p-6 max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="font-bold text-base flex items-center gap-2"><i data-lucide="dumbbell" class="w-[18px] h-[18px] text-accent-amber"></i> خطة تمرين جديدة</h3>
+      <button onclick="closeWorkoutPlanModal()" class="text-ink-500 hover:text-ink-100 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <form onsubmit="submitWorkoutPlanForm(event)" class="space-y-4">
+      <div class="grid grid-cols-3 gap-4">
+        <div class="col-span-2">
+          <label class="block text-xs font-semibold text-ink-500 mb-1.5">عنوان الخطة</label>
+          <input required id="wp-title" type="text" placeholder="مثال: خطة تضخيم — أغسطس" class="w-full bg-surface2 border border-border rounded-lg px-3 py-2.5 text-sm" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-ink-500 mb-1.5">تاريخ البدء</label>
+          <input required type="date" id="wp-start" class="w-full bg-surface2 border border-border rounded-lg px-3 py-2.5 text-sm font-mono" />
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-ink-500 mb-1.5">المدرب (اختياري)</label>
+        <select id="wp-coach" class="w-full bg-surface2 border border-border rounded-lg px-3 py-2.5 text-sm"><option>جارِ التحميل...</option></select>
+      </div>
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-xs font-semibold text-ink-500">أيام الخطة</label>
+          <button type="button" onclick="addWorkoutDayRow()" class="text-xs font-semibold text-accent-green flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> إضافة يوم</button>
+        </div>
+        <div id="workout-days-container" class="space-y-2"></div>
+      </div>
+      <button type="submit" class="w-full flex items-center justify-center gap-2 bg-accent-amber text-slate-950 font-bold text-sm py-3 rounded-xl shadow-glow-amber hover:brightness-110 active:scale-[0.98] transition-all mt-2">
+        <i data-lucide="save" class="w-[18px] h-[18px]"></i> حفظ الخطة
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ============================= المودال: نظام غذائي جديد ============================= -->
+<div id="diet-plan-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+  <div class="modal-overlay absolute inset-0 bg-black/70" onclick="closeDietPlanModal()"></div>
+  <div class="modal-panel relative w-full max-w-2xl bg-surface border border-border rounded-2xl shadow-card p-6 max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="font-bold text-base flex items-center gap-2"><i data-lucide="salad" class="w-[18px] h-[18px] text-accent-green"></i> نظام غذائي جديد</h3>
+      <button onclick="closeDietPlanModal()" class="text-ink-500 hover:text-ink-100 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <form onsubmit="submitDietPlanForm(event)" class="space-y-4">
+      <div class="grid grid-cols-3 gap-4">
+        <div class="col-span-2">
+          <label class="block text-xs font-semibold text-ink-500 mb-1.5">عنوان النظام</label>
+          <input required id="dp-title" type="text" placeholder="مثال: نظام تنشيف — أغسطس" class="w-full bg-surface2 border border-border rounded-lg px-3 py-2.5 text-sm" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-ink-500 mb-1.5">تاريخ البدء</label>
+          <input required type="date" id="dp-start" class="w-full bg-surface2 border border-border rounded-lg px-3 py-2.5 text-sm font-mono" />
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-ink-500 mb-1.5">المدرب (اختياري)</label>
+        <select id="dp-coach" class="w-full bg-surface2 border border-border rounded-lg px-3 py-2.5 text-sm"><option>جارِ التحميل...</option></select>
+      </div>
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-xs font-semibold text-ink-500">الوجبات</label>
+          <button type="button" onclick="addDietMealRow()" class="text-xs font-semibold text-accent-green flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> إضافة وجبة</button>
+        </div>
+        <div id="diet-meals-container" class="space-y-2"></div>
+      </div>
+      <button type="submit" class="w-full flex items-center justify-center gap-2 bg-accent-green text-slate-950 font-bold text-sm py-3 rounded-xl shadow-glow-green hover:brightness-110 active:scale-[0.98] transition-all mt-2">
+        <i data-lucide="save" class="w-[18px] h-[18px]"></i> حفظ النظام
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ============================= المودال: إضافة مصروف ============================= -->
+<div id="expense-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+  <div class="modal-overlay absolute inset-0 bg-black/70" onclick="closeExpenseModal()"></div>
+  <div class="modal-panel relative w-full max-w-sm bg-surface border border-border rounded-2xl shadow-card p-6">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="font-bold text-base flex items-center gap-2"><i data-lucide="receipt" class="w-[18px] h-[18px] text-accent-red"></i> إضافة مصروف</h3>
+      <button onclick="closeExpenseModal()" class="text-ink-500 hover:text-ink-100 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <form onsubmit="submitExpenseForm(event)" class="space-y-4">
+      <div>
+        <label class="block text-xs font-semibold text-ink-500 mb-1.5">التصنيف</label>
+        <input required id="ef-category" type="text" placeholder="مثال: إيجار، صيانة، رواتب" class="w-full bg-surface2 border border-border rounded-lg px-3 py-2.5 text-sm" />
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-ink-500 mb-1.5">الوصف (اختياري)</label>
+        <input id="ef-description" type="text" class="w-full bg-surface2 border border-border rounded-lg px-3 py-2.5 text-sm" />
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-ink-500 mb-1.5">المبلغ (ج.م)</label>
+        <input required type="number" step="0.01" min="0" id="ef-amount" class="w-full bg-surface2 border border-border rounded-lg px-3 py-2.5 text-sm font-mono ltr-num" />
+      </div>
+      <button type="submit" class="w-full flex items-center justify-center gap-2 bg-accent-red/90 text-white font-bold text-sm py-3 rounded-xl hover:brightness-110 active:scale-[0.98] transition-all mt-2">
+        <i data-lucide="save" class="w-[18px] h-[18px]"></i> حفظ المصروف
+      </button>
+    </form>
+  </div>
+</div>
+
+<div id="toast-root" class="fixed bottom-6 left-6 space-y-2 z-50"></div>
+
+<!-- مكتبة الأيقونات -->
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
+
+<!-- الطبقة الأساسية المشتركة -->
+<script src="../js/core/toast.js" defer></script>
+<script src="../js/core/auth.js" defer></script>
+<script src="../js/core/http.js" defer></script>
+<script src="../js/core/format.js" defer></script>
+
+<!-- طبقة الاتصال بالـ API -->
+<script src="../js/api/authApi.js" defer></script>
+<script src="../js/api/membersApi.js" defer></script>
+<script src="../js/api/subscriptionTypesApi.js" defer></script>
+<script src="../js/api/subscriptionsApi.js" defer></script>
+<script src="../js/api/paymentsApi.js" defer></script>
+<script src="../js/api/dashboardApi.js" defer></script>
+<script src="../js/api/attendanceApi.js" defer></script>
+<script src="../js/api/weightLogsApi.js" defer></script>
+<script src="../js/api/measurementsApi.js" defer></script>
+<script src="../js/api/coachesApi.js" defer></script>
+<script src="../js/api/workoutPlansApi.js" defer></script>
+<script src="../js/api/dietPlansApi.js" defer></script>
+<script src="../js/api/productsApi.js" defer></script>
+<script src="../js/api/salesApi.js" defer></script>
+<script src="../js/api/expensesApi.js" defer></script>
+<script src="../js/api/notificationsApi.js" defer></script>
+<script src="../js/api/settingsApi.js" defer></script>
+<script src="../js/api/reportsApi.js" defer></script>
+<script src="../js/api/backupsApi.js" defer></script>
+
+<!-- الشاشات -->
+<script src="../js/views/dashboard.js" defer></script>
+<script src="../js/views/members.js" defer></script>
+<script src="../js/views/weight.js" defer></script>
+<script src="../js/views/vip.js" defer></script>
+<script src="../js/views/pos.js" defer></script>
+<script src="../js/views/reports.js" defer></script>
+<script src="../js/views/settings.js" defer></script>
+<script src="../js/views/notifications.js" defer></script>
+
+<!-- الإقلاع -->
+<script src="../js/app.js" defer></script>
+</body>
+</html>

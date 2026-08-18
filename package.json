@@ -1,0 +1,64 @@
+{
+  "name": "nabd-gym-management",
+  "version": "1.0.0",
+  "description": "نبض — نظام إدارة صالات رياضية، تطبيق سطح مكتب محلي بالكامل",
+  "author": "نبض",
+  "main": "electron/main.js",
+  "scripts": {
+    "postinstall": "cd server && npm install",
+    "dev:server": "cd server && npm run dev",
+    "dev:electron": "electron .",
+    "prisma:generate": "cd server && npm run prisma:generate",
+    "prisma:migrate": "cd server && npm run prisma:migrate",
+    "prisma:seed": "cd server && npm run prisma:seed",
+    "pack": "electron-builder --dir",
+    "dist:win": "electron-builder --win nsis"
+  },
+  "devDependencies": {
+    "electron": "^31.3.0",
+    "electron-builder": "^24.13.3"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.4"
+  },
+  "build": {
+    "appId": "com.nabd.gms",
+    "productName": "نبض",
+    "directories": {
+      "output": "dist",
+      "buildResources": "electron/build"
+    },
+    "files": [
+      "electron/**/*",
+      "client/**/*",
+      "!client/**/*.map"
+    ],
+    "extraResources": [
+      { "from": "server", "to": "server", "filter": ["**/*", "!**/*.log", "!.env"] },
+      { "from": "prisma", "to": "prisma", "filter": ["**/*"] },
+      { "from": "resources/pgsql", "to": "pgsql", "filter": ["**/*"] }
+    ],
+    "asarUnpack": [
+      "**/@prisma/client/**",
+      "**/.prisma/**",
+      "**/node_modules/bcryptjs/**"
+    ],
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "electron/build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "نبض"
+    },
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "https://updates.example-gym-vendor.com/nabd/"
+      }
+    ]
+  }
+}
