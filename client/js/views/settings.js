@@ -70,3 +70,23 @@ async function restoreBackupConfirm(filename) {
     showApiError(err);
   }
 }
+document.getElementById('changePasswordForm')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const currentPassword = document.getElementById('currentPassword').value;
+  const newPassword = document.getElementById('newPassword').value;
+
+  try {
+    const response = await window.AuthAPI.changePassword(currentPassword, newPassword);
+    
+    if (response.success) {
+      alert('تم تغيير كلمة المرور بنجاح!');
+      e.target.reset(); // تفريغ حقول الإدخال
+    } else {
+      alert('خطأ: ' + (response.message || 'فشل تغيير كلمة المرور'));
+    }
+  } catch (error) {
+    console.error(error);
+    alert('حدث خطأ أثناء الاتصال بالسيرفر');
+  }
+});
